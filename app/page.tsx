@@ -1,25 +1,123 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, FormEvent } from "react";
 
-const IntegratedCrossUnitTransferSystem = () => {
-  // -----------------------------
-  // State 與資料
-  // -----------------------------
-  const [interfaceType, setInterfaceType] = useState("consumer"); // 'consumer' or 'seller'
-  const [currentStep, setCurrentStep] = useState(1);
-  const [searchType, setSearchType] = useState("phone");
-  const [searchValue, setSearchValue] = useState("");
-  const [memberStatus, setMemberStatus] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [consumptionValues, setConsumptionValues] = useState({});
-  const [showTransferHistory, setShowTransferHistory] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [transferToCancel, setTransferToCancel] = useState(null);
-  const [cancelReason, setCancelReason] = useState("");
-  const [userDepartment, setUserDepartment] = useState("板橋醫美");
+/** 會員歷購訂單中，每個課程的型別 */
+interface IOrderItem {
+  name: string;
+  total: number;
+  used: number;
+  remaining: number;
+  shared: boolean;
+}
 
-  const [transferRequests, setTransferRequests] = useState([
+/** 會員歷購訂單 */
+interface IOrder {
+  id: string;
+  store: string;
+  date: string;
+  items: IOrderItem[];
+  status: string; // '有效' 等
+}
+
+/** 會員資料 (mock 用) */
+interface IMemberData {
+  name: string;
+  phone: string;
+  mainStore: string;
+  relatedStores: string[];
+  orders: IOrder[];
+}
+
+/** 消耗方 Step 1 搜尋結果狀態 */
+type MemberStatus = null | "found" | "notFound";
+
+/** 跨轉單 Request (銷售方 / 審核) */
+interface ITransferRequest {
+  id: string;
+  requestTime: string;  // 請求時間
+  status: "待審核" | "已審核" | "已拒絕" | "已取消" | "已完成";
+  consumer: string;     // 消耗方
+  member: string;       // 會員名稱
+  phone: string;        // 會員手機
+  orderId: string;      // 對應哪個銷售訂單
+  course: string;       // 消耗課程 (文字說明)
+  amount: number;       // 總消耗堂數
+  remainingAfter: number; 
+  requestNote: string;  
+  approveTime?: string;
+  approveNote?: string;
+  approver?: string;
+}
+
+/** 消耗方歷史 (已完成或發起中) 跨轉單 */
+interface ICompletedTransfer {
+  id: string;
+  date: string;         // 發起或完成時間 (顯示用)
+  status: "待審核" | "已審核" | "已拒絕" | "已取消" | "已完成";
+  consumer: string;     // 消耗方
+  seller: string;       // 銷售方
+  member: string;
+  orderId: string;
+  course: string;
+  amount: number;
+  canCancel: boolean;
+}
+
+/** 用於記錄課程消耗量的映射 (key=課程名稱, value=消耗堂數) */
+type ConsumptionMap = Record<string, number>;
+
+/** 審核按鈕的類型 */
+type ApprovalType = "approve" | "reject" | "";
+
+/** 範例主元件 */
+const IntegratedCrossUnitTransferSystem: React.FC = () => {
+  // 角色切換: 'consumer' or 'seller'
+  const [interfaceType, setInterfaceType] = useState<"consumer" | "seller">("consumer");
+
+  // ---------- 消耗方狀態 ---------- //
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [searchType, setSearchType] = useState<"phone" | "name">("phone");
+  const [searchValue, setSearchValue] = useState<string>("");
+  const [memberStatus, setMemberStatus] = useState<MemberStatus>(null);
+  const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
+  const [consumptionValues, setConsumptionValues] = useState<ConsumptionMap>({});
+  const [showTransferHistory, setShowTransferHistory] = useState<boolean>(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState<boolean>(false);
+  const [transferToCancel, setTransferToCancel] = useState<ICompletedTransfer | null>(null);
+  const [cancelReason, setCancelReason] = useState<string>("");
+  const [userDepartment, setUserDepartment] = useState<string>("板橋醫美");
+
+  // 消耗方 - 已完成 / 歷史列表
+  const [completedTransfers, setCompletedTransfers] = useState<ICompletedTransfer[]>([
+    {
+      id: "CTR-20240308-001",
+      date: "2024-03-08 15:22",
+      status: "已完成",
+      consumer: "愛美肌",
+      seller: "板橋醫美",
+      member: "王小明",
+      orderId: "SO-20240301-025",
+      course: "美白護理課程",
+      amount: 2,
+      canCancel: true,
+    },
+    {
+      id: "CTR-20240307-003",
+      date: "2024-03-07 10:35",
+      status: "已完成",
+      consumer: "愛美肌",
+      seller: "漾澤",
+      member: "陳大明",
+      orderId: "SO-20240225-098",
+      course: "肌膚緊緻課程",
+      amount: 1,
+      canCancel: false,
+    },
+  ]);
+
+  // ---------- 銷售方狀態 ---------- //
+  const [transferRequests, setTransferRequests] = useState<ITransferRequest[]>([
     {
       id: "CTR-20240309-001",
       requestTime: "2024-03-09 10:15",
@@ -60,22 +158,26 @@ const IntegratedCrossUnitTransferSystem = () => {
       requestNote: "",
       approveTime: "2024-03-08 17:20",
       approveNote: "已確認課程內容與剩餘次數",
+      approver: "王經理",
     },
   ]);
 
-  const [approvalHistory, setApprovalHistory] = useState([
+  const [approvalHistory, setApprovalHistory] = useState<ITransferRequest[]>([
     {
       id: "CTR-20240308-001",
       requestTime: "2024-03-08 09:10",
       status: "已審核",
       consumer: "漾澤",
       member: "林小花",
+      phone: "0912000111",
       orderId: "SO-20240220-019",
       course: "保濕護理課程",
       amount: 1,
+      remainingAfter: 9,
+      requestNote: "",
       approveTime: "2024-03-08 10:05",
-      approver: "王經理",
       approveNote: "已電話確認客戶需求",
+      approver: "王經理",
     },
     {
       id: "CTR-20240307-003",
@@ -83,53 +185,32 @@ const IntegratedCrossUnitTransferSystem = () => {
       status: "已拒絕",
       consumer: "愛美肌",
       member: "張大明",
+      phone: "0988111222",
       orderId: "SO-20240215-027",
       course: "美白調理課程",
       amount: 3,
+      remainingAfter: 5,
+      requestNote: "因剩餘次數不足，已拒絕",
       approveTime: "2024-03-07 15:30",
+      approveNote: "已與消耗方溝通",
       approver: "李主管",
-      approveNote: "課程剩餘次數不足，已與消耗方溝通",
     },
   ]);
 
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [approvalType, setApprovalType] = useState("");
-  const [approvalNote, setApprovalNote] = useState("");
-  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [filterStatus, setFilterStatus] = useState("待審核");
+  const [selectedRequest, setSelectedRequest] = useState<ITransferRequest | null>(null);
+  const [approvalType, setApprovalType] = useState<ApprovalType>("");
+  const [approvalNote, setApprovalNote] = useState<string>("");
+  const [showApprovalDialog, setShowApprovalDialog] = useState<boolean>(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState<boolean>(false);
+  const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [filterStatus, setFilterStatus] = useState<"待審核" | "已審核" | "已拒絕" | "all">("待審核");
 
-  const [errorMessage, setErrorMessage] = useState("");
-  const [completedTransfers, setCompletedTransfers] = useState([
-    {
-      id: "CTR-20240308-001",
-      date: "2024-03-08 15:22",
-      status: "已完成",
-      consumer: "愛美肌",
-      seller: "板橋醫美",
-      member: "王小明",
-      orderId: "SO-20240301-025",
-      course: "美白護理課程",
-      amount: 2,
-      canCancel: true,
-    },
-    {
-      id: "CTR-20240307-003",
-      date: "2024-03-07 10:35",
-      status: "已完成",
-      consumer: "愛美肌",
-      seller: "漾澤",
-      member: "陳大明",
-      orderId: "SO-20240225-098",
-      course: "肌膚緊緻課程",
-      amount: 1,
-      canCancel: false,
-    },
-  ]);
+  // ---------- 共同狀態 ---------- //
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const mockMemberData = {
+  // ---------- 模擬會員資料 ---------- //
+  const mockMemberData: IMemberData = {
     name: "王小明",
     phone: "0912345678",
     mainStore: "愛美肌",
@@ -157,30 +238,33 @@ const IntegratedCrossUnitTransferSystem = () => {
     ],
   };
 
-  // -----------------------------
-  // 1. 切換角色
-  // -----------------------------
-  const switchUserRole = () => {
-    setInterfaceType(interfaceType === "consumer" ? "seller" : "consumer");
+  // =========================================================================
+  // (1) 切換角色
+  // =========================================================================
+  const switchUserRole = (): void => {
+    if (interfaceType === "consumer") {
+      setInterfaceType("seller");
+    } else {
+      setInterfaceType("consumer");
+      // 重置銷售方顯示狀態
+      setShowHistory(false);
+      setSelectedRequest(null);
+    }
 
+    // 如果原先是 seller -> 轉成 consumer，需要重置相關
     if (interfaceType === "seller") {
-      // 從銷售方切回消耗方，重置部分狀態
       setCurrentStep(1);
       setSearchValue("");
       setSelectedOrder(null);
       setConsumptionValues({});
       setShowTransferHistory(false);
-    } else {
-      // 從消耗方切回銷售方，重置部分狀態
-      setShowHistory(false);
-      setSelectedRequest(null);
     }
   };
 
-  // -----------------------------
-  // 2. 消耗方操作：會員查詢
-  // -----------------------------
-  const handleSearch = () => {
+  // =========================================================================
+  // (2) 消耗方操作：查詢會員
+  // =========================================================================
+  const handleSearch = (): void => {
     if (!searchValue.trim()) {
       setErrorMessage("請輸入查詢內容");
       return;
@@ -189,6 +273,7 @@ const IntegratedCrossUnitTransferSystem = () => {
       setErrorMessage("手機號碼格式不正確，請輸入10位數字");
       return;
     }
+
     // 模擬查詢結果
     if (
       searchValue === "0912345678" ||
@@ -200,19 +285,20 @@ const IntegratedCrossUnitTransferSystem = () => {
     } else {
       setMemberStatus("notFound");
     }
+
     setErrorMessage("");
   };
 
-  // -----------------------------
-  // 3. 消耗方操作：選擇訂單
-  // -----------------------------
-  const handleSelectOrder = (order) => {
+  // =========================================================================
+  // (3) 消耗方操作：選擇訂單
+  // =========================================================================
+  const handleSelectOrder = (order: IOrder): void => {
     const hasSharedCourses = order.items.some((item) => item.shared);
     if (!hasSharedCourses) {
       setErrorMessage("所選訂單不包含任何共用課程，無法進行跨轉");
       return;
     }
-    const initialValues = {};
+    const initialValues: ConsumptionMap = {};
     order.items.forEach((item) => {
       if (item.shared) {
         initialValues[item.name] = 0;
@@ -224,139 +310,163 @@ const IntegratedCrossUnitTransferSystem = () => {
     setErrorMessage("");
   };
 
-  // -----------------------------
-  // 4. 消耗方操作：填寫消耗數量
-  // -----------------------------
-  const handleConsumptionChange = (courseName, value) => {
+  // =========================================================================
+  // (4) 消耗方操作：填寫消耗數量
+  // =========================================================================
+  const handleConsumptionChange = (courseName: string, value: number): void => {
     setConsumptionValues((prev) => ({
       ...prev,
       [courseName]: value,
     }));
   };
 
-  // -----------------------------
-  // 5. 消耗方操作：發起跨轉單
-  // -----------------------------
-  const handleSubmitRequest = () => {
-    const hasSelected = Object.values(consumptionValues).some(
-      (value) => typeof value === "number" && value > 0
-    );
+  // =========================================================================
+  // (5) 消耗方操作：發起跨轉單
+  // =========================================================================
+  const handleSubmitRequest = (): void => {
+    // 至少要有一個課程消耗
+    const hasSelected = Object.values(consumptionValues).some((val) => val > 0);
     if (!hasSelected) {
       setErrorMessage("請至少選擇一項課程進行消耗");
       return;
     }
+    if (!selectedOrder) return;
 
+    // 檢查數量是否超過剩餘
     let isValid = true;
     let errorMsg = "";
-    if (selectedOrder) {
-      selectedOrder.items.forEach((item) => {
-        if (item.shared && consumptionValues[item.name] > item.remaining) {
+    for (const item of selectedOrder.items) {
+      if (item.shared) {
+        const needed = consumptionValues[item.name] || 0;
+        if (needed > item.remaining) {
           isValid = false;
           errorMsg = `${item.name} 的消耗數量不能超過剩餘數量 ${item.remaining}`;
+          break;
         }
-      });
+      }
     }
     if (!isValid) {
       setErrorMessage(errorMsg);
       return;
     }
 
-    if (!selectedOrder) return;
-
     const now = new Date();
-    const newTransfer = {
-      id: `CTR-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(
-        Math.random() * 1000
-      )
-        .toString()
-        .padStart(3, "0")}`,
-      date: now.toISOString().slice(0, 16).replace("T", " "),
-      requestTime: now.toISOString().slice(0, 16).replace("T", " "),
+    const nowStr = now.toISOString().slice(0, 16).replace("T", " ");
+
+    // 建立新跨轉資料
+    // (1) 同時存進 "消耗方歷史" (ICompletedTransfer) 與 "銷售方待審核" (ITransferRequest) 兩個 state
+    // 注意: ITransferRequest 跟 ICompletedTransfer 屬性不完全相同，我們做適當轉換
+    const totalConsumption = Object.values(consumptionValues).reduce((sum, val) => sum + val, 0);
+
+    const newId = `CTR-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(
+      Math.random() * 1000
+    )
+      .toString()
+      .padStart(3, "0")}`;
+
+    // 給消耗方歷史用
+    const newCompleted: ICompletedTransfer = {
+      id: newId,
+      date: nowStr,
       status: "待審核",
       consumer: userDepartment,
       seller: selectedOrder.store,
       member: mockMemberData.name,
-      phone: mockMemberData.phone,
       orderId: selectedOrder.id,
       course: Object.entries(consumptionValues)
-        .filter(([_, value]) => value > 0)
-        .map(([name, value]) => `${name} x ${value}`)
+        .filter(([_, v]) => v > 0)
+        .map(([k, v]) => `${k} x ${v}`)
         .join(", "),
-      amount: Object.values(consumptionValues).reduce(
-        (sum, value) => sum + value,
-        0
-      ),
+      amount: totalConsumption,
       canCancel: true,
-      remainingAfter: selectedOrder.items[0]
-        ? selectedOrder.items[0].remaining -
-          (consumptionValues[selectedOrder.items[0].name] || 0)
-        : 0,
+    };
+
+    // 給銷售方審核用
+    const newRequest: ITransferRequest = {
+      id: newId,
+      requestTime: nowStr,
+      status: "待審核",
+      consumer: userDepartment,
+      member: mockMemberData.name,
+      phone: mockMemberData.phone,
+      orderId: selectedOrder.id,
+      course: newCompleted.course,
+      amount: totalConsumption,
+      remainingAfter:
+        selectedOrder.items[0].remaining -
+        (consumptionValues[selectedOrder.items[0].name] || 0),
       requestNote: "客戶要求在本店進行療程",
     };
 
-    setCompletedTransfers((prev) => [newTransfer, ...prev]);
-    setTransferRequests((prev) => [newTransfer, ...prev]);
+    // 更新到消耗方歷史
+    setCompletedTransfers((prev) => [newCompleted, ...prev]);
+    // 更新到銷售方待審核清單
+    setTransferRequests((prev) => [newRequest, ...prev]);
 
     setCurrentStep(4);
     setErrorMessage("");
   };
 
-  // -----------------------------
-  // 6. 消耗方操作：取消跨轉單
-  // -----------------------------
-  const handleCancelTransfer = (transfer) => {
+  // =========================================================================
+  // (6) 消耗方操作：取消跨轉單
+  // =========================================================================
+  const handleCancelTransfer = (transfer: ICompletedTransfer): void => {
     setTransferToCancel(transfer);
     setShowCancelConfirm(true);
   };
 
-  const confirmCancelTransfer = (event) => {
+  const confirmCancelTransfer = (event: FormEvent): void => {
     event.preventDefault();
     if (!cancelReason.trim()) {
       setErrorMessage("請提供取消原因");
       return;
     }
-    if (transferToCancel) {
-      setCompletedTransfers((prev) =>
-        prev.map((item) =>
-          item.id === transferToCancel.id
-            ? { ...item, status: "已取消", canCancel: false }
-            : item
-        )
-      );
-      setTransferRequests((prev) =>
-        prev.map((item) =>
-          item.id === transferToCancel.id ? { ...item, status: "已取消" } : item
-        )
-      );
-      setErrorMessage("");
-      setShowCancelConfirm(false);
-      setTransferToCancel(null);
-      setCancelReason("");
-    }
+    if (!transferToCancel) return;
+
+    // 1) 更新 completedTransfers
+    setCompletedTransfers((prev) =>
+      prev.map((item) =>
+        item.id === transferToCancel.id
+          ? { ...item, status: "已取消", canCancel: false }
+          : item
+      )
+    );
+
+    // 2) 更新 transferRequests 同步狀態
+    setTransferRequests((prev) =>
+      prev.map((item) =>
+        item.id === transferToCancel.id ? { ...item, status: "已取消" } : item
+      )
+    );
+
+    setErrorMessage("");
+    setShowCancelConfirm(false);
+    setTransferToCancel(null);
+    setCancelReason("");
   };
 
-  // -----------------------------
-  // 7. 銷售方操作：篩選 + 審核
-  // -----------------------------
-  const filteredRequests = transferRequests.filter((request) =>
-    filterStatus === "all" ? true : request.status === filterStatus
+  // =========================================================================
+  // (7) 銷售方操作：篩選 + 審核
+  // =========================================================================
+  const filteredRequests = transferRequests.filter((req) =>
+    filterStatus === "all" ? true : req.status === filterStatus
   );
 
-  const handleApprove = (request) => {
+  const handleApprove = (request: ITransferRequest): void => {
     setSelectedRequest(request);
     setApprovalType("approve");
     setApprovalNote("");
     setShowApprovalDialog(true);
   };
 
-  const handleReject = (request) => {
+  const handleReject = (request: ITransferRequest): void => {
     setSelectedRequest(request);
     setApprovalType("reject");
     setApprovalNote("");
     setShowApprovalDialog(true);
   };
 
-  const submitApproval = () => {
+  const submitApproval = (): void => {
     if (!approvalNote.trim()) {
       setErrorMessage("請填寫審核備註");
       return;
@@ -364,61 +474,63 @@ const IntegratedCrossUnitTransferSystem = () => {
     setShowConfirmation(true);
   };
 
-  const confirmApproval = () => {
-    const now = new Date().toLocaleString("zh-TW");
-    const updatedRequests = transferRequests.map((req) => {
-      if (req.id === selectedRequest.id) {
-        return {
-          ...req,
-          status: approvalType === "approve" ? "已審核" : "已拒絕",
-          approveTime: now,
-          approveNote: approvalNote,
-          approver: "王經理",
-        };
-      }
-      return req;
-    });
-    setTransferRequests(updatedRequests);
+  const confirmApproval = (): void => {
+    if (!selectedRequest) return; // 容錯
+    const nowStr = new Date().toLocaleString("zh-TW");
+    const newStatus = approvalType === "approve" ? "已審核" : "已拒絕";
 
-    if (selectedRequest) {
-      const historyItem = {
-        ...selectedRequest,
-        status: approvalType === "approve" ? "已審核" : "已拒絕",
-        approveTime: now,
-        approver: "王經理",
-        approveNote: approvalNote,
-      };
-      setApprovalHistory([historyItem, ...approvalHistory]);
+    // 1) 更新 transferRequests
+    const updated = transferRequests.map((req) =>
+      req.id === selectedRequest.id
+        ? {
+            ...req,
+            status: newStatus,
+            approveTime: nowStr,
+            approveNote: approvalNote,
+            approver: "王經理",
+          }
+        : req
+    );
+    setTransferRequests(updated);
 
-      setCompletedTransfers((prev) =>
-        prev.map((item) =>
-          item.id === selectedRequest.id
-            ? {
-                ...item,
-                status: approvalType === "approve" ? "已完成" : "已拒絕",
-              }
-            : item
-        )
-      );
-    }
+    // 2) 新增到審核歷史
+    const historyItem: ITransferRequest = {
+      ...selectedRequest,
+      status: newStatus,
+      approveTime: nowStr,
+      approveNote: approvalNote,
+      approver: "王經理",
+    };
+    setApprovalHistory((prev) => [historyItem, ...prev]);
+
+    // 3) 同步更新 completedTransfers
+    setCompletedTransfers((prev) =>
+      prev.map((item) =>
+        item.id === selectedRequest.id
+          ? { ...item, status: approvalType === "approve" ? "已完成" : "已拒絕" }
+          : item
+      )
+    );
 
     setShowApprovalDialog(false);
     setShowConfirmation(false);
     setSelectedRequest(null);
     setErrorMessage("");
+    setApprovalType("");
+    setApprovalNote("");
   };
 
-  const viewDetails = (request) => {
+  const viewDetails = (request: ITransferRequest): void => {
     setSelectedRequest(request);
     setShowDetailsDialog(true);
   };
 
-  // -----------------------------
-  // Render
-  // -----------------------------
+  // =========================================================================
+  // 以下開始：完整 JSX
+  // =========================================================================
   return (
     <div className="min-h-screen bg-gray-100 p-4">
-      {/* 頂部 Header */}
+      {/* Header */}
       <header className="bg-white shadow rounded-lg mb-6 p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -440,9 +552,10 @@ const IntegratedCrossUnitTransferSystem = () => {
                 className={`w-3 h-3 rounded-full mr-2 ${
                   interfaceType === "consumer" ? "bg-green-500" : "bg-blue-500"
                 }`}
-              />
+              ></span>
               {interfaceType === "consumer" ? "切換為銷售方" : "切換為消耗方"}
             </button>
+
             {interfaceType === "consumer" && (
               <button
                 onClick={() => setShowTransferHistory(!showTransferHistory)}
@@ -455,7 +568,14 @@ const IntegratedCrossUnitTransferSystem = () => {
         </div>
       </header>
 
-      {/* 消耗方介面 */}
+      {/* 錯誤訊息區塊 */}
+      {errorMessage && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-700">{errorMessage}</p>
+        </div>
+      )}
+
+      {/* ====================== 消耗方介面 ====================== */}
       {interfaceType === "consumer" && (
         <main className="bg-white p-6 rounded-lg shadow">
           {/* 進度條 */}
@@ -481,7 +601,7 @@ const IntegratedCrossUnitTransferSystem = () => {
                 className={`flex-1 h-1 mx-2 ${
                   currentStep >= 2 ? "bg-blue-600" : "bg-gray-300"
                 }`}
-              />
+              ></div>
               <div
                 className={`flex flex-col items-center ${
                   currentStep >= 2 ? "text-blue-600" : "text-gray-400"
@@ -502,7 +622,7 @@ const IntegratedCrossUnitTransferSystem = () => {
                 className={`flex-1 h-1 mx-2 ${
                   currentStep >= 3 ? "bg-blue-600" : "bg-gray-300"
                 }`}
-              />
+              ></div>
               <div
                 className={`flex flex-col items-center ${
                   currentStep >= 3 ? "text-blue-600" : "text-gray-400"
@@ -523,7 +643,7 @@ const IntegratedCrossUnitTransferSystem = () => {
                 className={`flex-1 h-1 mx-2 ${
                   currentStep >= 4 ? "bg-blue-600" : "bg-gray-300"
                 }`}
-              />
+              ></div>
               <div
                 className={`flex flex-col items-center ${
                   currentStep >= 4 ? "text-blue-600" : "text-gray-400"
@@ -543,14 +663,7 @@ const IntegratedCrossUnitTransferSystem = () => {
             </div>
           </div>
 
-          {/* 錯誤訊息 */}
-          {errorMessage && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-700">{errorMessage}</p>
-            </div>
-          )}
-
-          {/* 步驟1: 查詢會員 */}
+          {/* Step 1: 查詢會員 */}
           {currentStep === 1 && (
             <div>
               <h2 className="text-lg font-semibold mb-4">查詢會員資料</h2>
@@ -582,8 +695,8 @@ const IntegratedCrossUnitTransferSystem = () => {
                   type="text"
                   placeholder={
                     searchType === "phone"
-                      ? "請輸入會員手機號碼 (測試：0912345678)"
-                      : "請輸入會員姓名 (測試：王小明)"
+                      ? "請輸入會員手機號碼 (測試輸入0912345678)"
+                      : "請輸入會員姓名 (測試輸入王小明)"
                   }
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
@@ -613,10 +726,12 @@ const IntegratedCrossUnitTransferSystem = () => {
             </div>
           )}
 
-          {/* 步驟2: 歷購訂單 */}
+          {/* Step 2: 歷購訂單 */}
           {currentStep === 2 && (
             <div>
-              <h2 className="text-lg font-semibold mb-4">確認銷售訂單歸屬門市與歷購內容</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                確認銷售訂單歸屬門市與歷購內容
+              </h2>
               <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
                 <div className="flex justify-between items-start">
                   <div>
@@ -633,7 +748,9 @@ const IntegratedCrossUnitTransferSystem = () => {
                 </div>
               </div>
               <h3 className="font-medium mb-2">歷購銷售訂單列表</h3>
-              <p className="text-sm text-gray-600 mb-4">請選擇要進行消耗的訂單</p>
+              <p className="text-sm text-gray-600 mb-4">
+                請選擇要進行消耗的訂單
+              </p>
               <div className="overflow-x-auto">
                 <table className="min-w-full border border-gray-200">
                   <thead className="bg-gray-100">
@@ -659,12 +776,8 @@ const IntegratedCrossUnitTransferSystem = () => {
                     {mockMemberData.orders.map((order) => (
                       <tr key={order.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 border-b text-sm">{order.id}</td>
-                        <td className="px-4 py-3 border-b text-sm">
-                          {order.store}
-                        </td>
-                        <td className="px-4 py-3 border-b text-sm">
-                          {order.date}
-                        </td>
+                        <td className="px-4 py-3 border-b text-sm">{order.store}</td>
+                        <td className="px-4 py-3 border-b text-sm">{order.date}</td>
                         <td className="px-4 py-3 border-b text-sm">
                           <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
                             {order.status}
@@ -694,7 +807,7 @@ const IntegratedCrossUnitTransferSystem = () => {
             </div>
           )}
 
-          {/* 步驟3: 填寫消耗數量 */}
+          {/* Step 3: 填寫消耗數量 */}
           {currentStep === 3 && selectedOrder && (
             <div>
               <h2 className="text-lg font-semibold mb-4">課程消耗操作</h2>
@@ -768,7 +881,7 @@ const IntegratedCrossUnitTransferSystem = () => {
                           {item.shared ? (
                             <input
                               type="number"
-                              min="0"
+                              min={0}
                               max={item.remaining}
                               value={consumptionValues[item.name] || 0}
                               onChange={(e) =>
@@ -805,7 +918,7 @@ const IntegratedCrossUnitTransferSystem = () => {
             </div>
           )}
 
-          {/* 步驟4: 完成跨轉 */}
+          {/* Step 4: 完成跨轉 */}
           {currentStep === 4 && (
             <div>
               <div className="text-center">
@@ -831,7 +944,9 @@ const IntegratedCrossUnitTransferSystem = () => {
                 </p>
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 text-left max-w-md mx-auto">
                   <h3 className="font-medium mb-2">跨轉單資訊</h3>
-                  <p className="text-sm">跨轉單號: {completedTransfers[0].id}</p>
+                  <p className="text-sm">
+                    跨轉單號: {completedTransfers[0].id}
+                  </p>
                   <p className="text-sm">
                     消耗方: {completedTransfers[0].consumer}
                   </p>
@@ -879,7 +994,7 @@ const IntegratedCrossUnitTransferSystem = () => {
         </main>
       )}
 
-      {/* 銷售方介面 */}
+      {/* ====================== 銷售方介面 ====================== */}
       {interfaceType === "seller" && (
         <main className="max-w-7xl mx-auto px-4 pb-6">
           {/* 上方切換標籤 */}
@@ -908,16 +1023,19 @@ const IntegratedCrossUnitTransferSystem = () => {
             </nav>
           </div>
 
+          {/* 依據 showHistory 顯示不同清單 */}
           {!showHistory ? (
             <>
-              {/* 篩選區 */}
+              {/* 篩選 */}
               <div className="mb-4 flex items-center">
                 <label className="mr-2 text-sm font-medium text-gray-700">
                   狀態：
                 </label>
                 <select
                   value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
+                  onChange={(e) =>
+                    setFilterStatus(e.target.value as typeof filterStatus)
+                  }
                   className="p-2 border border-gray-300 rounded-md text-sm"
                 >
                   <option value="待審核">待審核</option>
@@ -1110,7 +1228,7 @@ const IntegratedCrossUnitTransferSystem = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {history.approver}
+                          {history.approver || "--"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
@@ -1130,15 +1248,538 @@ const IntegratedCrossUnitTransferSystem = () => {
         </main>
       )}
 
-      {/* 
-        以下省略各種彈窗 / Dialog，包括：
-        - 消耗方歷史紀錄 (showTransferHistory)
-        - 取消跨轉單 (showCancelConfirm)
-        - 銷售方審核彈窗 (showApprovalDialog, showConfirmation)
-        - 詳情彈窗 (showDetailsDialog)
-        ...
-        只要在同一檔案中完成即可
-      */}
+      {/* ====================== 消耗方 - 歷史記錄彈窗 ====================== */}
+      {showTransferHistory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">跨轉單歷史記錄</h2>
+              <button
+                onClick={() => setShowTransferHistory(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      單號
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      日期
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      狀態
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      會員
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      課程
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {completedTransfers.map((transfer) => (
+                    <tr key={transfer.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {transfer.id}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {transfer.date}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            transfer.status === "已完成"
+                              ? "bg-green-100 text-green-800"
+                              : transfer.status === "已取消"
+                              ? "bg-red-100 text-red-800"
+                              : transfer.status === "待審核"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : transfer.status === "已拒絕"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {transfer.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {transfer.member}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {transfer.course} ({transfer.amount}堂)
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        {transfer.canCancel && transfer.status === "已完成" && (
+                          <button
+                            onClick={() => handleCancelTransfer(transfer)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            取消跨轉
+                          </button>
+                        )}
+                        {!transfer.canCancel &&
+                          transfer.status === "已取消" && (
+                            <span className="text-gray-400">已取消</span>
+                          )}
+                        {transfer.status === "待審核" && (
+                          <span className="text-gray-500">等待審核中</span>
+                        )}
+                        {transfer.status === "已拒絕" && (
+                          <span className="text-gray-400">已拒絕</span>
+                        )}
+                        {!transfer.canCancel &&
+                          transfer.status !== "已取消" &&
+                          transfer.status !== "待審核" &&
+                          transfer.status !== "已拒絕" && (
+                            <span className="text-gray-400">不可取消</span>
+                          )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 inline-block mr-1 text-yellow-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                取消跨轉單說明：僅授予消耗方取消權限，請謹慎操作。
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================== 消耗方 - 取消確認彈窗 ====================== */}
+      {showCancelConfirm && transferToCancel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <div className="flex items-center justify-center mb-4 text-red-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-12 w-12"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold mb-2 text-center">取消跨轉單</h2>
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-3 mb-4">
+              <p className="text-sm">
+                <strong>跨轉單號:</strong> {transferToCancel.id}
+              </p>
+              <p className="text-sm">
+                <strong>會員:</strong> {transferToCancel.member}
+              </p>
+              <p className="text-sm">
+                <strong>課程:</strong> {transferToCancel.course}
+              </p>
+              <p className="text-sm">
+                <strong>消耗方:</strong> {transferToCancel.consumer}
+              </p>
+              <p className="text-sm">
+                <strong>銷售方:</strong> {transferToCancel.seller}
+              </p>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                取消原因 <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md h-24"
+                placeholder="請詳細說明取消原因，例如：客戶未到、客戶改期等"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                請提供取消原因以便後續追蹤和分析。
+              </p>
+            </div>
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-red-600">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 inline-block mr-1"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                此操作無法撤銷
+              </p>
+              <div>
+                <button
+                  onClick={() => {
+                    setShowCancelConfirm(false);
+                    setTransferToCancel(null);
+                    setCancelReason("");
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md mr-2 hover:bg-gray-50"
+                >
+                  返回
+                </button>
+                <button
+                  onClick={confirmCancelTransfer}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                >
+                  確認取消
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================== 銷售方 - 審核對話框 ====================== */}
+      {showApprovalDialog && selectedRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+            <h2 className="text-lg font-semibold mb-4">
+              {approvalType === "approve" ? "審核通過" : "拒絕請求"}
+            </h2>
+            <div className="mb-6 bg-gray-50 p-4 rounded-md">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600">請求編號</p>
+                  <p className="font-medium">{selectedRequest.id}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">會員姓名</p>
+                  <p className="font-medium">{selectedRequest.member}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">消耗方</p>
+                  <p className="font-medium">{selectedRequest.consumer}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">訂單編號</p>
+                  <p className="font-medium">{selectedRequest.orderId}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">消耗課程</p>
+                  <p className="font-medium">{selectedRequest.course}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">消耗數量</p>
+                  <p className="font-medium">{selectedRequest.amount}</p>
+                </div>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {approvalType === "approve" ? "審核備註" : "拒絕原因"}
+              </label>
+              <textarea
+                value={approvalNote}
+                onChange={(e) => setApprovalNote(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md h-32"
+                placeholder={
+                  approvalType === "approve" ? "請填寫審核備註..." : "請填寫拒絕原因..."
+                }
+              />
+              {errorMessage && (
+                <p className="mt-1 text-sm text-red-600">{errorMessage}</p>
+              )}
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setShowApprovalDialog(false);
+                  setErrorMessage("");
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md mr-2 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={submitApproval}
+                className={`px-4 py-2 text-white rounded-md ${
+                  approvalType === "approve"
+                    ? "bg-green-500 hover:bg-green-600"
+                    : "bg-red-500 hover:bg-red-600"
+                }`}
+              >
+                {approvalType === "approve" ? "確認審核通過" : "確認拒絕"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================== 銷售方 - 最終確認對話框 ====================== */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <div className="flex items-center justify-center mb-4 text-yellow-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-12 w-12"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold mb-2 text-center">確認操作</h2>
+            <p className="text-center text-gray-600 mb-6">
+              您確定要
+              {approvalType === "approve" ? "通過" : "拒絕"}此跨轉單請求嗎？此操作無法撤銷。
+            </p>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md mr-2 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmApproval}
+                className={`px-4 py-2 text-white rounded-md ${
+                  approvalType === "approve"
+                    ? "bg-green-500 hover:bg-green-600"
+                    : "bg-red-500 hover:bg-red-600"
+                }`}
+              >
+                確認
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================== 銷售方 - 詳情對話框 ====================== */}
+      {showDetailsDialog && selectedRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full">
+            <div className="flex justify-between items-start">
+              <h2 className="text-lg font-semibold mb-4">跨轉單詳情</h2>
+              <span
+                className={`px-2 py-1 text-xs rounded-full ${
+                  selectedRequest.status === "待審核"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : selectedRequest.status === "已審核"
+                    ? "bg-green-100 text-green-800"
+                    : selectedRequest.status === "已取消"
+                    ? "bg-gray-100 text-gray-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {selectedRequest.status}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="bg-gray-50 p-4 rounded-md">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">
+                  基本信息
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">請求編號</span>
+                    <span className="font-medium">{selectedRequest.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">請求時間</span>
+                    <span>{selectedRequest.requestTime}</span>
+                  </div>
+                  {selectedRequest.approveTime && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">審核時間</span>
+                      <span>{selectedRequest.approveTime}</span>
+                    </div>
+                  )}
+                  {selectedRequest.approver && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">審核人</span>
+                      <span>{selectedRequest.approver}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-md">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">
+                  消耗信息
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">消耗方</span>
+                    <span>{selectedRequest.consumer}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">會員姓名</span>
+                    <span className="font-medium">{selectedRequest.member}</span>
+                  </div>
+                  {selectedRequest.phone && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">手機號碼</span>
+                      <span>{selectedRequest.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">訂單編號</span>
+                    <span>{selectedRequest.orderId}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mb-6 bg-gray-50 p-4 rounded-md">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">
+                課程詳情
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">
+                        課程名稱
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">
+                        消耗數量
+                      </th>
+                      {selectedRequest.remainingAfter !== undefined && (
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">
+                          消耗後剩餘
+                        </th>
+                      )}
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">
+                        共用課程
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* 這裡僅示範一列; 若實際需要多課程，請自行擴充邏輯 */}
+                    <tr>
+                      <td className="px-4 py-2 text-sm">
+                        {selectedRequest.course}
+                      </td>
+                      <td className="px-4 py-2 text-sm">
+                        {selectedRequest.amount}
+                      </td>
+                      {selectedRequest.remainingAfter !== undefined && (
+                        <td className="px-4 py-2 text-sm">
+                          {selectedRequest.remainingAfter}
+                        </td>
+                      )}
+                      <td className="px-4 py-2 text-sm">
+                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                          是
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {(selectedRequest.requestNote || selectedRequest.approveNote) && (
+              <div className="mb-6 bg-gray-50 p-4 rounded-md">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">
+                  備註信息
+                </h3>
+                {selectedRequest.requestNote && (
+                  <div className="mb-3">
+                    <span className="text-gray-600 text-xs block mb-1">
+                      消耗方請求備註：
+                    </span>
+                    <p className="text-sm bg-white p-2 rounded border border-gray-200">
+                      {selectedRequest.requestNote || "無"}
+                    </p>
+                  </div>
+                )}
+                {selectedRequest.approveNote && (
+                  <div>
+                    <span className="text-gray-600 text-xs block mb-1">
+                      審核備註：
+                    </span>
+                    <p className="text-sm bg-white p-2 rounded border border-gray-200">
+                      {selectedRequest.approveNote}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowDetailsDialog(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                關閉
+              </button>
+              {selectedRequest.status === "待審核" && (
+                <div className="ml-2 space-x-2">
+                  <button
+                    onClick={() => {
+                      setShowDetailsDialog(false);
+                      handleApprove(selectedRequest);
+                    }}
+                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                  >
+                    審核通過
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDetailsDialog(false);
+                      handleReject(selectedRequest);
+                    }}
+                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                  >
+                    拒絕
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
