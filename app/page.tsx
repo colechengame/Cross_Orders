@@ -11,6 +11,32 @@ export default function CrossUnitTransfer() {
   const [memberStatus, setMemberStatus] = useState<'found' | 'notFound' | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showVerificationPanel, setShowVerificationPanel] = useState(false);
+  const [showCancellationPanel, setShowCancellationPanel] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [cancellationSuccess, setCancellationSuccess] = useState(false);
+  const [completedTransfers, setCompletedTransfers] = useState<CompletedTransfer[]>([
+    { 
+      id: 'CTR-20240305-001', 
+      sourceStore: '板橋醫美', 
+      targetStore: '愛美肌',
+      date: '2024-03-05',
+      memberName: '王小明',
+      course: '保濕護理課程',
+      quantity: 1,
+      status: '已完成'
+    },
+    { 
+      id: 'CTR-20240220-008', 
+      sourceStore: '板橋醫美', 
+      targetStore: '愛美肌',
+      date: '2024-02-20',
+      memberName: '王小明',
+      course: '肌膚緊緻課程',
+      quantity: 2,
+      status: '已完成'
+    }
+  ]);
+  
   interface OrderItem {
     name: string;
     total: number;
@@ -27,17 +53,29 @@ export default function CrossUnitTransfer() {
     status: string;
   }
   
+  interface CompletedTransfer {
+    id: string;
+    sourceStore: string;
+    targetStore: string;
+    date: string;
+    memberName: string;
+    course: string;
+    quantity: number;
+    status: string;
+  }
+  
   interface OperationHistoryItem {
-      action: HistoryAction;
-      data: any;
-      timestamp: string;
-      step: number;
-    }
+    action: HistoryAction;
+    data: any;
+    timestamp: string;
+    step: number;
+  }
   
   const [operationHistory, setOperationHistory] = useState<OperationHistoryItem[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [selectedTransfer, setSelectedTransfer] = useState<CompletedTransfer | null>(null);
   
   // 模擬會員資料
   const mockMemberData = {
@@ -69,7 +107,7 @@ export default function CrossUnitTransfer() {
   };
 
   // 記錄操作歷史
-  type HistoryAction = 'step_change' | 'select_order' | 'submit';
+  type HistoryAction = 'step_change' | 'select_order' | 'submit' | 'cancel_transfer';
   
   const addToHistory = (action: HistoryAction, data: any) => {
     const timestamp = new Date().toISOString();
@@ -95,7 +133,7 @@ export default function CrossUnitTransfer() {
   };
 
   // 確認操作
-  const confirmOperation = (operation: 'select_order' | 'submit', nextAction: () => void) => {
+  const confirmOperation = (operation: 'select_order' | 'submit' | 'cancel_transfer', nextAction: () => void) => {
     setConfirmAction(() => nextAction);
     setShowConfirmation(true);
   };
@@ -118,6 +156,7 @@ export default function CrossUnitTransfer() {
     setCurrentStep(2);
     setErrorMessage('');
   };
+  
   // 選擇訂單
   const handleSelectOrder = (order: Order) => {
     // 檢查訂單是否包含共用課程
@@ -184,6 +223,49 @@ export default function CrossUnitTransfer() {
     setShowVerificationPanel(false);
     setCurrentStep(3);
   };
+  
+  // 顯示已完成跨轉列表
+  const showCompletedTransferList = () => {
+    setCurrentStep(5);
+    setErrorMessage('');
+  };
+  
+  // 選擇跨轉單進行取消
+  const handleSelectTransfer = (transfer: CompletedTransfer) => {
+    setSelectedTransfer(transfer);
+    setShowCancellationPanel(true);
+  };
+  
+  // 處理取消跨轉
+  const handleCancelTransfer = () => {
+    if (!cancellationReason.trim()) {
+      setErrorMessage('請填寫取消原因');
+      return;
+    }
+    
+    // 確認操作
+    confirmOperation('cancel_transfer', () => {
+      // 更新跨轉單狀態
+      setCompletedTransfers(prev => 
+        prev.map(transfer => 
+          transfer.id === selectedTransfer?.id ? {...transfer, status: '已取消'} : transfer
+        )
+      );
+      
+      addToHistory('cancel_transfer', { 
+        transferId: selectedTransfer?.id,
+        reason: cancellationReason
+      });
+      
+      // 關閉取消面板並顯示成功訊息
+      setShowCancellationPanel(false);
+      setCancellationSuccess(true);
+      setErrorMessage('');
+      
+      // 重置取消原因
+      setCancellationReason('');
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -202,7 +284,7 @@ export default function CrossUnitTransfer() {
         {/* 操作控制面板 */}
         <div className="mb-4 flex justify-between items-center">
           <div className="flex items-center">
-            {currentStep > 1 && (
+            {currentStep > 1 && currentStep !== 5 && (
               <button 
                 onClick={undoLastOperation} 
                 className="flex items-center text-blue-600 hover:text-blue-800"
@@ -229,6 +311,18 @@ export default function CrossUnitTransfer() {
                 取消操作
               </button>
             )}
+            
+            {(currentStep === 1 || currentStep === 4) && (
+              <button 
+                onClick={showCompletedTransferList} 
+                className="flex items-center bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 ml-4"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                </svg>
+                查看已完成跨轉
+              </button>
+            )}
           </div>
         </div>
 
@@ -243,34 +337,48 @@ export default function CrossUnitTransfer() {
             </p>
           </div>
         )}
+        
+        {/* 成功訊息 */}
+        {cancellationSuccess && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+            <p className="text-sm text-green-700 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              跨轉單已成功取消！
+            </p>
+          </div>
+        )}
       
-        {/* 進度指示器 */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className={`flex flex-col items-center ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= 1 ? 'border-blue-600 bg-blue-100' : 'border-gray-400'}`}>1</div>
-              <span className="mt-1 text-sm">會員查詢</span>
-            </div>
-            <div className={`flex-1 h-1 mx-2 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-            
-            <div className={`flex flex-col items-center ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= 2 ? 'border-blue-600 bg-blue-100' : 'border-gray-400'}`}>2</div>
-              <span className="mt-1 text-sm">歷購確認</span>
-            </div>
-            <div className={`flex-1 h-1 mx-2 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-            
-            <div className={`flex flex-col items-center ${currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= 3 ? 'border-blue-600 bg-blue-100' : 'border-gray-400'}`}>3</div>
-              <span className="mt-1 text-sm">課程消耗</span>
-            </div>
-            <div className={`flex-1 h-1 mx-2 ${currentStep >= 4 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-            
-            <div className={`flex flex-col items-center ${currentStep >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= 4 ? 'border-blue-600 bg-blue-100' : 'border-gray-400'}`}>4</div>
-              <span className="mt-1 text-sm">發起跨轉</span>
+        {/* 進度指示器 (只在跨轉流程中顯示，而非查看已完成跨轉時) */}
+        {currentStep <= 4 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div className={`flex flex-col items-center ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= 1 ? 'border-blue-600 bg-blue-100' : 'border-gray-400'}`}>1</div>
+                <span className="mt-1 text-sm">會員查詢</span>
+              </div>
+              <div className={`flex-1 h-1 mx-2 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+              
+              <div className={`flex flex-col items-center ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= 2 ? 'border-blue-600 bg-blue-100' : 'border-gray-400'}`}>2</div>
+                <span className="mt-1 text-sm">歷購確認</span>
+              </div>
+              <div className={`flex-1 h-1 mx-2 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+              
+              <div className={`flex flex-col items-center ${currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= 3 ? 'border-blue-600 bg-blue-100' : 'border-gray-400'}`}>3</div>
+                <span className="mt-1 text-sm">課程消耗</span>
+              </div>
+              <div className={`flex-1 h-1 mx-2 ${currentStep >= 4 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+              
+              <div className={`flex flex-col items-center ${currentStep >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= 4 ? 'border-blue-600 bg-blue-100' : 'border-gray-400'}`}>4</div>
+                <span className="mt-1 text-sm">發起跨轉</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* 步驟 1: 會員查詢 */}
         {currentStep === 1 && (
@@ -331,6 +439,7 @@ export default function CrossUnitTransfer() {
                 <li>僅限查詢共用課程的會員資料</li>
                 <li>可使用手機號碼或姓名進行查詢</li>
                 <li>若查無資料，可進行身份核對與基本資料校正</li>
+                <li>若需查看或取消已完成的跨轉，請點擊右上角「查看已完成跨轉」</li>
               </ul>
             </div>
           </div>
@@ -524,6 +633,153 @@ export default function CrossUnitTransfer() {
           </div>
         )}
 
+        {/* 步驟 5: 已完成跨轉清單 */}
+        {currentStep === 5 && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-4">已完成跨轉單列表</h2>
+            <p className="text-sm text-gray-600 mb-4">以下是已完成的跨轉單，可點選操作進行取消</p>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-200">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-2 border-b text-left text-sm">跨轉單號</th>
+                    <th className="px-4 py-2 border-b text-left text-sm">銷售門市</th>
+                    <th className="px-4 py-2 border-b text-left text-sm">消耗門市</th>
+                    <th className="px-4 py-2 border-b text-left text-sm">課程名稱</th>
+                    <th className="px-4 py-2 border-b text-left text-sm">數量</th>
+                    <th className="px-4 py-2 border-b text-left text-sm">日期</th>
+                    <th className="px-4 py-2 border-b text-left text-sm">狀態</th>
+                    <th className="px-4 py-2 border-b text-left text-sm">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {completedTransfers.map((transfer) => (
+                    <tr key={transfer.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 border-b text-sm">{transfer.id}</td>
+                      <td className="px-4 py-3 border-b text-sm">{transfer.sourceStore}</td>
+                      <td className="px-4 py-3 border-b text-sm">{transfer.targetStore}</td>
+                      <td className="px-4 py-3 border-b text-sm">{transfer.course}</td>
+                      <td className="px-4 py-3 border-b text-sm">{transfer.quantity}</td>
+                      <td className="px-4 py-3 border-b text-sm">{transfer.date}</td>
+                      <td className="px-4 py-3 border-b text-sm">
+                        <span className={`px-2 py-1 ${transfer.status === '已完成' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} rounded-full text-xs`}>
+                          {transfer.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 border-b text-sm">
+                        {transfer.status === '已完成' ? (
+                          <button 
+                            onClick={() => handleSelectTransfer(transfer)}
+                            className="px-3 py-1 bg-red-500 text-white rounded-md text-xs hover:bg-red-600"
+                          >
+                            取消跨轉
+                          </button>
+                        ) : (
+                          <span className="text-gray-400">已取消</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {completedTransfers.length === 0 && (
+              <div className="py-8 text-center text-gray-500">
+                暫無已完成的跨轉記錄
+              </div>
+            )}
+            
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => setCurrentStep(1)}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                返回首頁
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* 取消跨轉面板 */}
+        {showCancellationPanel && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+              <h2 className="text-lg font-semibold mb-4 flex items-center text-red-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                取消跨轉單
+              </h2>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+                <p className="text-sm text-yellow-800">
+                  <span className="font-bold">重要提醒：</span> 取消跨轉後將恢復原門市課程可用數量，且無法撤銷此操作。
+                </p>
+              </div>
+              
+              <div className="mb-4 bg-gray-50 p-3 rounded-md">
+                <h3 className="font-medium text-sm mb-2">跨轉單資訊</h3>
+                <p className="text-sm">跨轉單號: {selectedTransfer?.id}</p>
+                <p className="text-sm">銷售門市: {selectedTransfer?.sourceStore}</p>
+                <p className="text-sm">消耗門市: {selectedTransfer?.targetStore}</p>
+                <p className="text-sm">課程名稱: {selectedTransfer?.course}</p>
+                <p className="text-sm">消耗數量: {selectedTransfer?.quantity}</p>
+                <p className="text-sm">日期: {selectedTransfer?.date}</p>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1 required">
+                  取消原因 <span className="text-red-500">*</span>
+                </label>
+                <select 
+                  className="w-full p-2 border border-gray-300 rounded-md mb-2"
+                  onChange={(e) => {
+                    if (e.target.value === 'other') {
+                      setCancellationReason('');
+                    } else {
+                      setCancellationReason(e.target.value);
+                    }
+                  }}
+                >
+                  <option value="">請選擇取消原因</option>
+                  <option value="客戶要求取消">客戶要求取消</option>
+                  <option value="操作錯誤">操作錯誤</option>
+                  <option value="課程消耗門市誤選">課程消耗門市誤選</option>
+                  <option value="消耗數量錯誤">消耗數量錯誤</option>
+                  <option value="other">其他原因</option>
+                </select>
+                
+                {cancellationReason === '' && (
+                  <textarea
+                    placeholder="請填寫取消原因"
+                    value={cancellationReason}
+                    onChange={(e) => setCancellationReason(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md resize-none"
+                    rows={3}
+                  ></textarea>
+                )}
+              </div>
+              
+              <div className="flex justify-end">
+                <button 
+                  onClick={() => setShowCancellationPanel(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md mr-2 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button 
+                  onClick={handleCancelTransfer}
+                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                >
+                  確認取消跨轉
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 身份驗證面板 */}
         {showVerificationPanel && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -640,7 +896,8 @@ export default function CrossUnitTransfer() {
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                         {op.action === 'step_change' ? '步驟變更' : 
                          op.action === 'select_order' ? '選擇訂單' : 
-                         op.action === 'submit' ? '提交請求' : op.action}
+                         op.action === 'submit' ? '提交請求' : 
+                         op.action === 'cancel_transfer' ? '取消跨轉' : op.action}
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                         {op.step}
