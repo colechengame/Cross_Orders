@@ -477,21 +477,21 @@ const IntegratedCrossUnitTransferSystem: React.FC = () => {
   const confirmApproval = (): void => {
     if (!selectedRequest) return; // 容錯
     const nowStr = new Date().toLocaleString("zh-TW");
-    const newStatus = approvalType === "approve" ? "已審核" : "已拒絕";
+    const newStatus = approvalType === "approve" ? "已審核" : "已拒絕" as const;
 
     // 1) 更新 transferRequests
     const updated = transferRequests.map((req) =>
       req.id === selectedRequest.id
         ? {
             ...req,
-            status: newStatus,
+            status: newStatus as ITransferRequest["status"],
             approveTime: nowStr,
             approveNote: approvalNote,
             approver: "王經理",
           }
         : req
     );
-    setTransferRequests(updated);
+    setTransferRequests(updated as ITransferRequest[]);
 
     // 2) 新增到審核歷史
     const historyItem: ITransferRequest = {
