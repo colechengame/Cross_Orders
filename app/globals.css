@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light theme - Earth tone colors */
+  --background: #faf9f7;
+  --foreground: #3e2723;
+  --card: #ffffff;
+  --card-foreground: #3e2723;
+  --popover: #ffffff;
+  --popover-foreground: #3e2723;
+  --primary: #8d6e63;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5dc;
+  --secondary-foreground: #5d4e75;
+  --muted: #f7f3e9;
+  --muted-foreground: #8a7968;
+  --accent: #ddbea9;
+  --accent-foreground: #3e2723;
+  --destructive: #d2691e;
+  --destructive-foreground: #ffffff;
+  --border: #d7ccc8;
+  --input: #efebe9;
+  --ring: #a1887f;
+}
+
+.dark {
+  /* Dark theme - Earth tone colors with better contrast */
+  --background: #1a1613;
+  --foreground: #f5f3f0;
+  --card: #2d2a26;
+  --card-foreground: #f5f3f0;
+  --popover: #2d2a26;
+  --popover-foreground: #f5f3f0;
+  --primary: #d4b896;
+  --primary-foreground: #1a1613;
+  --secondary: #3e342a;
+  --secondary-foreground: #e8d5c4;
+  --muted: #332e28;
+  --muted-foreground: #d1c7bd;
+  --accent: #8b6f47;
+  --accent-foreground: #f5f3f0;
+  --destructive: #ff8a65;
+  --destructive-foreground: #ffffff;
+  --border: #4a3d32;
+  --input: #3e342a;
+  --ring: #d4b896;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* 保留系統偏好設定的兼容性 */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not(.light) {
+    --background: #1a1613;
+    --foreground: #f5f3f0;
+    --card: #2d2a26;
+    --card-foreground: #f5f3f0;
+    --border: #4a3d32;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 主題過渡動畫 */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
