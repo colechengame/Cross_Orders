@@ -100,11 +100,7 @@ export default function V2HomePage() {
       ...prev,
       shouldTransferOrder: true,
       currentStep: 4,
-      successMessage: {
-        title: "訂單轉移成功",
-        message: `訂單已從 ${uiState.selectedOrder!.bu} 轉移至 ${targetBU}`,
-        type: "success",
-      },
+      successMessage: `訂單已從 ${uiState.selectedOrder!.bu} 轉移至 ${targetBU}`,
     }));
 
     // 模擬訂單轉移處理
@@ -429,10 +425,10 @@ export default function V2HomePage() {
 
                     {/* 成功訊息 */}
                     <h3 className="text-2xl font-bold text-stone-900 dark:text-stone-50 mb-2">
-                      {uiState.successMessage.title}
+                      訂單轉移成功
                     </h3>
                     <p className="text-stone-600 dark:text-stone-400 mb-6">
-                      {uiState.successMessage.message}
+                      {uiState.successMessage}
                     </p>
 
                     {/* 訂單轉移資訊 */}
@@ -462,13 +458,13 @@ export default function V2HomePage() {
                           </div>
                           <div className="text-center space-y-2">
                             <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                              訂單轉移成功！
+                              訂單轉移成功!
                             </p>
                             <p className="text-xs text-blue-600 dark:text-blue-400">
                               • 訂單歸屬權已轉移至 {targetBU}
                             </p>
                             <p className="text-xs text-blue-600 dark:text-blue-400">
-                              • 轉移記錄已保存，可用於財務結算
+                              • 轉移記錄已保存,可用於財務結算
                             </p>
                             <p className="text-xs text-amber-700 dark:text-amber-300 font-medium mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
                               ⚠️ 實際課程消耗請在 {targetBU} 系統中進行操作

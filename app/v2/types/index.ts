@@ -317,7 +317,7 @@ export interface IUIState {
   currentStep: number;
   selectedBU: BUCode | null;
   selectedMember: IMember | null;
-  selectedOrder: IOrder | null;
+  selectedOrder: any; // 使用 any 以兼容 ISimplifiedOrder
   consumptionValues: Record<string, number>;
   shouldTransferOrder: boolean;
   errorMessage: string;
