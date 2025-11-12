@@ -534,18 +534,45 @@ const IntegratedCrossUnitTransferSystem: React.FC = () => {
       {/* Header */}
       <header className="bg-amber-50 dark:bg-stone-800 shadow-lg rounded-lg mb-6 p-4 transition-colors border border-stone-200 dark:border-stone-600">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-amber-900 dark:text-amber-50">
-              {interfaceType === "consumer" ? "跨轉單處理系統" : "跨轉單審核系統"}
-            </h1>
-            <p className="mt-1 text-sm text-amber-700 dark:text-amber-100">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl font-bold text-amber-900 dark:text-amber-50">
+                {interfaceType === "consumer" ? "跨轉單處理系統" : "跨轉單審核系統"}
+              </h1>
+              <span className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full">
+                A 版
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-amber-700 dark:text-amber-100 mb-2">
               {interfaceType === "consumer"
                 ? `消耗方操作介面 - ${userDepartment} (接收跨轉單部門)`
                 : `銷售方操作介面 - 愛美肌 (課程銷售部門)`}
             </p>
+
+            {/* 版本說明 */}
+            <div className="flex items-start gap-2 text-xs bg-amber-100 dark:bg-amber-950 rounded-lg p-2 border border-amber-200 dark:border-amber-800">
+              <svg className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <p className="text-amber-800 dark:text-amber-200">
+                完整審核流程，適用於需要銷售方確認的場景。<strong className="ml-1">想要更快速的流程？試試 B 版！</strong>
+              </p>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <ThemeToggle />
+
+            {/* 版本切換按鈕 */}
+            <a
+              href="/v2"
+              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-sm font-semibold hover:from-blue-600 hover:to-indigo-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
+              </svg>
+              切換到 B 版
+            </a>
+
             <button
               onClick={switchUserRole}
               className="px-3 py-1 bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 rounded-md text-sm hover:bg-amber-300 dark:hover:bg-amber-700 flex items-center transition-colors"
