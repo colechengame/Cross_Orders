@@ -210,6 +210,83 @@ export const mockMembers: IMember[] = [
     createdBy: "張店長",
     createdStore: "板橋醫美",
   },
+
+  // ========================================
+  // 測試資料: 不同匹配規則的案例
+  // ========================================
+
+  // 案例 1: 電話 + 姓名 匹配 (80分) - 劉美麗
+  {
+    id: "M-BU3-007",
+    name: "劉美麗",
+    phone: "0945-678-901",
+    email: "liu2@example.com",
+    birthday: "1990-03-15", // 生日不同
+    gender: "female",
+    mainStore: "愛美肌",
+    relatedStores: [],
+    createdAt: "2024-11-01T10:00:00Z",
+    createdBy: "張諮詢師",
+    createdStore: "愛美肌",
+  },
+
+  // 案例 2: 電話 + 生日 匹配 (70分) - 周文傑
+  {
+    id: "M-BU3-008",
+    name: "周小文", // 姓名不同
+    phone: "0912-123-456",
+    email: "chou2@example.com",
+    birthday: "1991-06-14", // 生日相同
+    gender: "male",
+    mainStore: "漾澤",
+    relatedStores: [],
+    createdAt: "2024-11-02T11:00:00Z",
+    createdBy: "趙諮詢師",
+    createdStore: "漾澤",
+  },
+
+  // 案例 3: 電話 + 姓名 + 生日 全匹配 (100分) - 黃美玲
+  {
+    id: "M-BU1-006",
+    name: "黃美玲",
+    phone: "0956-789-012",
+    email: "huang2@example.com",
+    birthday: "1995-07-18",
+    gender: "female",
+    mainStore: "板橋醫美",
+    relatedStores: [],
+    createdAt: "2024-11-03T12:00:00Z",
+    createdBy: "張店長",
+    createdStore: "板橋醫美",
+  },
+
+  // 案例 4: 只有電話相同 (不符合規則) - 測試用
+  {
+    id: "M-BU3-009",
+    name: "測試會員A",
+    phone: "0999-888-777",
+    email: "test1@example.com",
+    birthday: "1992-01-01",
+    gender: "female",
+    mainStore: "愛美肌",
+    relatedStores: [],
+    createdAt: "2024-11-04T13:00:00Z",
+    createdBy: "張諮詢師",
+    createdStore: "愛美肌",
+  },
+  {
+    id: "M-BU1-007",
+    name: "測試會員B", // 姓名不同
+    phone: "0999-888-777",
+    email: "test2@example.com",
+    birthday: "1993-02-02", // 生日不同
+    gender: "female",
+    mainStore: "板橋醫美",
+    relatedStores: [],
+    createdAt: "2024-11-05T14:00:00Z",
+    createdBy: "張店長",
+    createdStore: "板橋醫美",
+  },
 ];
 
 // ============================================================================
