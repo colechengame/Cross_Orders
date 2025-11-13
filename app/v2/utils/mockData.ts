@@ -16,9 +16,9 @@ export const mockBUs: IBU[] = [
     displayName: "🏪 板橋醫美 (BU1)",
   },
   {
-    code: "BU2",
+    code: "BU3",
     name: "漾澤",
-    displayName: "🏪 漾澤 (BU2)",
+    displayName: "🏪 漾澤 (BU3)",
   },
   {
     code: "BU3",
@@ -244,7 +244,7 @@ export const mockMemberLinks: IMemberLink[] = [
     },
     syncEnabled: false,
   },
-  // 陳小明：BU3 和 BU2 已自動關聯
+  // 陳小明：BU3 和 BU3 已自動關聯 (愛美肌和漾澤)
   {
     linkId: "LINK-002",
     linkType: "auto",
@@ -258,7 +258,7 @@ export const mockMemberLinks: IMemberLink[] = [
         phone: "0934-567-890",
       },
       {
-        bu: "BU2",
+        bu: "BU3",
         memberId: "M-BU2-001",
         memberName: "陳小明",
         phone: "0934-567-890",
@@ -378,7 +378,7 @@ function generateCourseOrders(
 
 // 為每個會員生成訂單
 export const mockOrders: IOrder[] = [
-  // BU3 會員訂單
+  // BU3 會員訂單 (愛美肌)
   ...generateCourseOrders(
     "M-BU3-001",
     "王小美",
@@ -428,7 +428,7 @@ export const mockOrders: IOrder[] = [
     11
   ),
 
-  // BU1 會員訂單
+  // BU1 會員訂單 (板橋醫美)
   ...generateCourseOrders(
     "M-BU1-001",
     "王小美",
@@ -470,12 +470,12 @@ export const mockOrders: IOrder[] = [
     9
   ),
 
-  // BU2 會員訂單
+  // BU3 會員訂單 (漾澤)
   ...generateCourseOrders(
     "M-BU2-001",
     "陳小明",
     "0934-567-890",
-    "BU2",
+    "BU3",
     "漾澤",
     8
   ),
@@ -483,7 +483,7 @@ export const mockOrders: IOrder[] = [
     "M-BU2-002",
     "黃美玲",
     "0956-789-012",
-    "BU2",
+    "BU3",
     "漾澤",
     11
   ),
@@ -499,8 +499,7 @@ export const mockOrders: IOrder[] = [
 export function getMembersByBU(buCode: string): IMember[] {
   return mockMembers.filter((member) => {
     if (buCode === "BU1") return member.mainStore === "板橋醫美";
-    if (buCode === "BU2") return member.mainStore === "漾澤";
-    if (buCode === "BU3") return member.mainStore === "愛美肌";
+    if (buCode === "BU3") return member.mainStore === "愛美肌" || member.mainStore === "漾澤";
     return false;
   });
 }
@@ -534,8 +533,7 @@ function convertToSimplifiedOrder(order: IOrder): ISimplifiedOrder | null {
   // 從 store 名稱推斷 BU 代碼
   let bu: "BU1" | "BU2" | "BU3";
   if (order.store === "板橋醫美") bu = "BU1";
-  else if (order.store === "漾澤") bu = "BU2";
-  else if (order.store === "愛美肌") bu = "BU3";
+  else if (order.store === "愛美肌" || order.store === "漾澤") bu = "BU3";
   else bu = "BU3"; // 默認值
 
   return {
