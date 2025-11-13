@@ -308,13 +308,13 @@ export const mockMembers: IMember[] = [
 ];
 
 // ============================================================================
-// 會員關聯數據
+// 會員關聯數據 (僅跨 BU 關聯)
 // ============================================================================
 
 export const mockMemberLinks: IMemberLink[] = [
-  // 王小美：BU3 和 BU1 已自動關聯
+  // 🔗 自動關聯 1: 王小美 (BU3 愛美肌 ↔ BU1 板橋醫美) - 100分完全匹配
   {
-    linkId: "LINK-001",
+    linkId: "LINK-AUTO-001",
     linkType: "auto",
     linkStatus: "linked",
     linkDate: "2024-01-20T11:00:00Z",
@@ -339,24 +339,82 @@ export const mockMemberLinks: IMemberLink[] = [
     },
     syncEnabled: false,
   },
-  // 陳小明：BU3 和 BU3 已自動關聯 (愛美肌和漾澤)
+  
+  // 🔗 自動關聯 2: 劉美麗 (BU1 板橋醫美 ↔ BU3 愛美肌) - 80分 (電話+姓名)
   {
-    linkId: "LINK-002",
+    linkId: "LINK-AUTO-002",
     linkType: "auto",
     linkStatus: "linked",
-    linkDate: "2024-03-08T10:30:00Z",
+    linkDate: "2024-11-01T10:00:00Z",
     members: [
       {
-        bu: "BU3",
-        memberId: "M-BU3-003",
-        memberName: "陳小明",
-        phone: "0934-567-890",
+        bu: "BU1",
+        memberId: "M-BU1-002",
+        memberName: "劉美麗",
+        phone: "0945-678-901",
       },
       {
         bu: "BU3",
-        memberId: "M-BU2-001",
-        memberName: "陳小明",
-        phone: "0934-567-890",
+        memberId: "M-BU3-007",
+        memberName: "劉美麗",
+        phone: "0945-678-901",
+      },
+    ],
+    matchCriteria: {
+      nameMatch: true,
+      phoneMatch: true,
+      matchScore: 80,
+    },
+    syncEnabled: false,
+  },
+  
+  // 🔗 自動關聯 3: 周文傑 (BU1 板橋醫美 ↔ BU3 漾澤) - 70分 (電話+生日)
+  {
+    linkId: "LINK-AUTO-003",
+    linkType: "auto",
+    linkStatus: "linked",
+    linkDate: "2024-11-02T11:00:00Z",
+    members: [
+      {
+        bu: "BU1",
+        memberId: "M-BU1-003",
+        memberName: "周文傑",
+        phone: "0912-123-456",
+      },
+      {
+        bu: "BU3",
+        memberId: "M-BU3-008",
+        memberName: "周小文",
+        phone: "0912-123-456",
+      },
+    ],
+    matchCriteria: {
+      nameMatch: false,
+      phoneMatch: true,
+      matchScore: 70,
+    },
+    syncEnabled: false,
+  },
+  
+  // 🔗 強制綁定 1: 黃美玲 (BU3 漾澤 ↔ BU1 板橋醫美) - 100分完全匹配 + 啟用同步
+  {
+    linkId: "LINK-STRONG-001",
+    linkType: "strong",
+    linkStatus: "strong-linked",
+    linkDate: "2024-11-03T12:00:00Z",
+    strongLinkDate: "2024-11-03T12:00:00Z",
+    members: [
+      {
+        bu: "BU3",
+        memberId: "M-BU2-002",
+        memberName: "黃美玲",
+        phone: "0956-789-012",
+      },
+      {
+        bu: "BU1",
+        memberId: "M-BU1-006",
+        memberName: "黃美玲",
+        phone: "0956-789-012",
       },
     ],
     matchCriteria: {
@@ -364,7 +422,11 @@ export const mockMemberLinks: IMemberLink[] = [
       phoneMatch: true,
       matchScore: 100,
     },
-    syncEnabled: false,
+    operator: "系統管理員",
+    operatorBU: "BU1",
+    syncEnabled: true,
+    syncDirection: "bidirectional",
+    syncFields: ["name", "phone", "email", "birthday", "gender", "address"],
   },
 ];
 
