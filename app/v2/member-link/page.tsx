@@ -45,6 +45,12 @@ export default function MemberLinkPage() {
       }
     );
 
+    // 檢查是否成功建立綁定 (null 表示同一 BU 無法綁定)
+    if (!newLink) {
+      alert("無法建立綁定: 兩個會員屬於同一個 BU,僅支援跨 BU 的會員綁定");
+      return;
+    }
+
     setLinks([...links, newLink]);
     setShowLinkDialog(false);
     setCandidateMember(null);
@@ -65,10 +71,13 @@ export default function MemberLinkPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-stone-900 dark:text-stone-50 mb-2">
-                會員綁定管理
+                跨 BU 會員綁定管理
               </h1>
               <p className="text-stone-600 dark:text-stone-400">
-                管理跨 BU 會員的自動關聯和強制綁定 (電話+姓名 或 電話+生日)
+                管理不同 BU 之間會員的自動關聯和強制綁定 (電話+姓名 或 電話+生日)
+              </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                ⚠️ 僅支援跨 BU 的會員關聯 (例如: BU1 ↔ BU3),同一 BU 內的會員無法關聯
               </p>
             </div>
             <a
@@ -277,10 +286,10 @@ export default function MemberLinkPage() {
               {/* 可自動關聯的候選會員 */}
               <div className="bg-white dark:bg-stone-800 rounded-xl shadow-lg p-6 border border-stone-200 dark:border-stone-700">
                 <h2 className="text-xl font-bold text-stone-900 dark:text-stone-50 mb-2">
-                  可關聯會員
+                  可關聯會員 (跨 BU)
                 </h2>
                 <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">
-                  規則: 電話相同 + (姓名相同 或 生日相同)
+                  規則: 不同 BU + 電話相同 + (姓名相同 或 生日相同)
                 </p>
 
                 {autoCandidates.length === 0 ? (
@@ -425,8 +434,9 @@ export default function MemberLinkPage() {
 
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                  <strong>綁定後:</strong>
-                  <br />• 資料將雙向同步
+                  <strong>跨 BU 綁定說明:</strong>
+                  <br />• 建立 {selectedMember.bu} ↔ {candidateMember.bu} 的會員關聯
+                  <br />• 資料將雙向同步 (姓名、電話、生日等)
                   <br />• 任一會員的資料更新會同步到另一會員
                   <br />• 可隨時解除綁定
                 </p>

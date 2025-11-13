@@ -44,6 +44,7 @@ export function calculateMatchScore(member1: IMember, member2: IMember): {
 
 /**
  * 在所有會員中尋找可以自動關聯的會員
+ * ⚠️ 重要: 會員關聯僅用於跨 BU 的會員,同一個 BU 內的會員不會關聯
  */
 export function findAutoLinkCandidates(
   targetMember: IMember,
@@ -68,12 +69,18 @@ export function findAutoLinkCandidates(
     };
   }> = [];
 
+  const targetBU = getMemberBU(targetMember);
+
   for (const member of allMembers) {
     // 跳過同一個會員
     if (member.id === targetMember.id) continue;
 
+    // 🔴 關鍵: 只關聯不同 BU 的會員 (跨 BU 關聯)
+    const memberBU = getMemberBU(member);
+    if (memberBU === targetBU) continue;
+
     // 跳過指定要排除的 BU
-    if (excludeBU && member.mainStore === getMemberBU(member)) continue;
+    if (excludeBU && memberBU === excludeBU) continue;
 
     const match = calculateMatchScore(targetMember, member);
 
@@ -108,6 +115,7 @@ function getMemberBU(member: IMember): BUCode {
 
 /**
  * 為兩個會員建立自動關聯
+ * ⚠️ 重要: 只能關聯不同 BU 的會員
  */
 export function createAutoLink(
   member1: IMember,
@@ -121,6 +129,12 @@ export function createAutoLink(
 
   const bu1 = getMemberBU(member1);
   const bu2 = getMemberBU(member2);
+
+  // 🔴 防護: 不允許同一個 BU 內的會員關聯
+  if (bu1 === bu2) {
+    console.warn(`無法建立關聯: 兩個會員屬於同一個 BU (${bu1})`);
+    return null;
+  }
 
   return {
     linkId: `LINK-AUTO-${Date.now()}`,
@@ -155,7 +169,8 @@ export function createAutoLink(
 // ============================================================================
 
 /**
- * 強制綁定兩個會員（不需要符合 3碰2 規則）
+ * 強制綁定兩個會員(不需要符合 3碰2 規則)
+ * ⚠️ 重要: 只能綁定不同 BU 的會員
  */
 export function createStrongLink(
   member1: IMember,
@@ -168,10 +183,16 @@ export function createStrongLink(
     masterDataSource?: BUCode;
     syncFields?: string[];
   }
-): IMemberLink {
+): IMemberLink | null {
   const match = calculateMatchScore(member1, member2);
   const bu1 = getMemberBU(member1);
   const bu2 = getMemberBU(member2);
+
+  // 🔴 防護: 不允許同一個 BU 內的會員綁定
+  if (bu1 === bu2) {
+    console.warn(`無法建立強制綁定: 兩個會員屬於同一個 BU (${bu1})`);
+    return null;
+  }
 
   return {
     linkId: `LINK-STRONG-${Date.now()}`,
