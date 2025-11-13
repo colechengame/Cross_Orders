@@ -68,7 +68,7 @@ export default function MemberLinkPage() {
                 會員綁定管理
               </h1>
               <p className="text-stone-600 dark:text-stone-400">
-                管理跨 BU 會員的自動關聯和強制綁定
+                管理跨 BU 會員的自動關聯和強制綁定 (電話+姓名 或 電話+生日)
               </p>
             </div>
             <a
@@ -255,13 +255,16 @@ export default function MemberLinkPage() {
 
               {/* 可自動關聯的候選會員 */}
               <div className="bg-white dark:bg-stone-800 rounded-xl shadow-lg p-6 border border-stone-200 dark:border-stone-700">
-                <h2 className="text-xl font-bold text-stone-900 dark:text-stone-50 mb-4">
-                  可關聯會員 (3碰2)
+                <h2 className="text-xl font-bold text-stone-900 dark:text-stone-50 mb-2">
+                  可關聯會員
                 </h2>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">
+                  規則: 電話相同 + (姓名相同 或 生日相同)
+                </p>
 
                 {autoCandidates.length === 0 ? (
                   <p className="text-center text-stone-500 dark:text-stone-400 py-8">
-                    未找到符合 3碰2 規則的候選會員
+                    未找到符合關聯規則的候選會員
                   </p>
                 ) : (
                   <div className="space-y-3">

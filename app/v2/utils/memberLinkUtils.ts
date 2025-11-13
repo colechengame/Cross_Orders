@@ -11,7 +11,7 @@ import type { IMember, IMemberLink, BUCode } from "../types";
 
 /**
  * 計算兩個會員的匹配分數
- * 規則: 姓名、電話、生日 三個欄位中至少匹配兩個
+ * 規則: (電話 + 姓名) 或 (電話 + 生日) 匹配
  */
 export function calculateMatchScore(member1: IMember, member2: IMember): {
   score: number;
@@ -24,17 +24,14 @@ export function calculateMatchScore(member1: IMember, member2: IMember): {
   const phoneMatch = member1.phone === member2.phone;
   const birthdayMatch = member1.birthday === member2.birthday;
 
-  // 計算匹配數量
-  const matchCount = [nameMatch, phoneMatch, birthdayMatch].filter(Boolean).length;
-
-  // 3碰2: 至少匹配2個欄位才能自動關聯
-  const canAutoLink = matchCount >= 2;
+  // 新規則: 必須電話匹配 + (姓名或生日)匹配
+  const canAutoLink = phoneMatch && (nameMatch || birthdayMatch);
 
   // 計算分數 (0-100)
   let score = 0;
-  if (nameMatch) score += 35;
-  if (phoneMatch) score += 35;
-  if (birthdayMatch) score += 30;
+  if (phoneMatch) score += 50; // 電話是必要條件,佔 50 分
+  if (nameMatch) score += 30;
+  if (birthdayMatch) score += 20;
 
   return {
     score,
