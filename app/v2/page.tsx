@@ -172,6 +172,15 @@ export default function V2HomePage() {
             {/* 版本切換按鈕 */}
             <div className="flex gap-3 ml-6">
               <a
+                href="/v2/member-link"
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg text-sm font-semibold hover:from-purple-600 hover:to-indigo-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg whitespace-nowrap"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                </svg>
+                會員綁定
+              </a>
+              <a
                 href="/"
                 className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg text-sm font-semibold hover:from-green-600 hover:to-emerald-700 flex items-center gap-2 transition-all shadow-md hover:shadow-lg whitespace-nowrap"
               >
