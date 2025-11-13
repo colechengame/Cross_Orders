@@ -100,10 +100,19 @@ export default function MemberLinkPage() {
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-stone-900 dark:text-stone-50">
-                      {member.name}
-                    </p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-stone-900 dark:text-stone-50">
+                        {member.name}
+                      </p>
+                      <span className={`px-2 py-0.5 text-xs font-semibold rounded ${
+                        member.bu === 'BU1' 
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                          : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                      }`}>
+                        {member.bu}
+                      </span>
+                    </div>
                     <p className="text-sm text-stone-600 dark:text-stone-400">
                       {member.phone} • {member.mainStore}
                     </p>
@@ -129,6 +138,18 @@ export default function MemberLinkPage() {
                   會員資訊
                 </h2>
                 <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-stone-600 dark:text-stone-400">
+                      歸屬 BU
+                    </span>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                      selectedMember.bu === 'BU1' 
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                        : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                    }`}>
+                      {selectedMember.bu}
+                    </span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-stone-600 dark:text-stone-400">
                       姓名
@@ -274,10 +295,19 @@ export default function MemberLinkPage() {
                         className="p-4 border border-stone-200 dark:border-stone-700 rounded-lg hover:border-amber-400 dark:hover:border-amber-600 transition-colors"
                       >
                         <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-semibold text-stone-900 dark:text-stone-50">
-                              {member.name}
-                            </p>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-semibold text-stone-900 dark:text-stone-50">
+                                {member.name}
+                              </p>
+                              <span className={`px-2 py-0.5 text-xs font-semibold rounded ${
+                                member.bu === 'BU1' 
+                                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                  : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                              }`}>
+                                {member.bu}
+                              </span>
+                            </div>
                             <p className="text-sm text-stone-600 dark:text-stone-400">
                               {member.phone} • {member.mainStore}
                             </p>

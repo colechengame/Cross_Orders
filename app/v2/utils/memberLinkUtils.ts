@@ -96,12 +96,10 @@ export function findAutoLinkCandidates(
 }
 
 /**
- * 根據會員的 mainStore 推斷 BU 代碼
+ * 根據會員取得 BU 代碼
  */
 function getMemberBU(member: IMember): BUCode {
-  if (member.mainStore === "板橋醫美") return "BU1";
-  if (member.mainStore === "愛美肌" || member.mainStore === "漾澤") return "BU3";
-  return "BU3"; // 默認值
+  return member.bu;
 }
 
 // ============================================================================

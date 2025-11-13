@@ -30,6 +30,7 @@ export interface IMember {
   address?: string;
 
   // 會員歸屬
+  bu: BUCode;                  // 歸屬 BU (新增)
   mainStore: string;           // 主建檔門市
   relatedStores: string[];     // 關聯門市
 

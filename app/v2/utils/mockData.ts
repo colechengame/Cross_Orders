@@ -32,7 +32,7 @@ export const mockBUs: IBU[] = [
 // ============================================================================
 
 export const mockMembers: IMember[] = [
-  // BU3 會員
+  // BU3 會員 - 愛美肌
   {
     id: "M-BU3-001",
     name: "王小美",
@@ -40,6 +40,7 @@ export const mockMembers: IMember[] = [
     email: "wang@example.com",
     birthday: "1990-05-15",
     gender: "female",
+    bu: "BU3",
     mainStore: "愛美肌",
     relatedStores: ["板橋醫美"],
     createdAt: "2024-01-15T10:00:00Z",
@@ -53,6 +54,7 @@ export const mockMembers: IMember[] = [
     email: "lee@example.com",
     birthday: "1985-08-20",
     gender: "male",
+    bu: "BU3",
     mainStore: "愛美肌",
     relatedStores: [],
     createdAt: "2024-02-10T14:30:00Z",
@@ -66,6 +68,7 @@ export const mockMembers: IMember[] = [
     email: "chen@example.com",
     birthday: "1992-03-10",
     gender: "male",
+    bu: "BU3",
     mainStore: "愛美肌",
     relatedStores: ["漾澤"],
     createdAt: "2024-03-05T09:15:00Z",
@@ -73,7 +76,7 @@ export const mockMembers: IMember[] = [
     createdStore: "愛美肌",
   },
 
-  // BU1 會員
+  // BU1 會員 - 板橋醫美
   {
     id: "M-BU1-001",
     name: "王小美",
@@ -81,6 +84,7 @@ export const mockMembers: IMember[] = [
     email: "wang@example.com",
     birthday: "1990-05-15",
     gender: "female",
+    bu: "BU1",
     mainStore: "板橋醫美",
     relatedStores: ["愛美肌"],
     createdAt: "2024-01-20T11:00:00Z",
@@ -94,6 +98,7 @@ export const mockMembers: IMember[] = [
     email: "liu@example.com",
     birthday: "1988-11-25",
     gender: "female",
+    bu: "BU1",
     mainStore: "板橋醫美",
     relatedStores: [],
     createdAt: "2024-02-15T13:45:00Z",
@@ -101,7 +106,7 @@ export const mockMembers: IMember[] = [
     createdStore: "板橋醫美",
   },
 
-  // BU2 會員
+  // BU3 會員 - 漾澤
   {
     id: "M-BU2-001",
     name: "陳小明",
@@ -109,6 +114,7 @@ export const mockMembers: IMember[] = [
     email: "chen@example.com",
     birthday: "1992-03-10",
     gender: "male",
+    bu: "BU3",
     mainStore: "漾澤",
     relatedStores: ["愛美肌"],
     createdAt: "2024-03-08T10:30:00Z",
@@ -122,6 +128,7 @@ export const mockMembers: IMember[] = [
     email: "huang@example.com",
     birthday: "1995-07-18",
     gender: "female",
+    bu: "BU3",
     mainStore: "漾澤",
     relatedStores: [],
     createdAt: "2024-04-12T15:20:00Z",
@@ -129,7 +136,7 @@ export const mockMembers: IMember[] = [
     createdStore: "漾澤",
   },
 
-  // 更多 BU3 會員
+  // 更多 BU3 會員 - 愛美肌
   {
     id: "M-BU3-004",
     name: "林雅婷",
@@ -137,6 +144,7 @@ export const mockMembers: IMember[] = [
     email: "lin@example.com",
     birthday: "1987-09-22",
     gender: "female",
+    bu: "BU3",
     mainStore: "愛美肌",
     relatedStores: [],
     createdAt: "2024-05-08T11:30:00Z",
@@ -150,6 +158,7 @@ export const mockMembers: IMember[] = [
     email: "chang@example.com",
     birthday: "1983-12-05",
     gender: "male",
+    bu: "BU3",
     mainStore: "愛美肌",
     relatedStores: [],
     createdAt: "2024-06-15T14:45:00Z",
@@ -163,6 +172,7 @@ export const mockMembers: IMember[] = [
     email: "wu@example.com",
     birthday: "1993-04-30",
     gender: "female",
+    bu: "BU3",
     mainStore: "愛美肌",
     relatedStores: [],
     createdAt: "2024-07-20T09:15:00Z",
@@ -170,7 +180,7 @@ export const mockMembers: IMember[] = [
     createdStore: "愛美肌",
   },
 
-  // 更多 BU1 會員
+  // 更多 BU1 會員 - 板橋醫美
   {
     id: "M-BU1-003",
     name: "周文傑",
@@ -178,6 +188,7 @@ export const mockMembers: IMember[] = [
     email: "chou@example.com",
     birthday: "1991-06-14",
     gender: "male",
+    bu: "BU1",
     mainStore: "板橋醫美",
     relatedStores: [],
     createdAt: "2024-08-10T10:00:00Z",
@@ -191,6 +202,7 @@ export const mockMembers: IMember[] = [
     email: "cheng@example.com",
     birthday: "1989-11-08",
     gender: "female",
+    bu: "BU1",
     mainStore: "板橋醫美",
     relatedStores: [],
     createdAt: "2024-09-05T13:30:00Z",
@@ -204,6 +216,7 @@ export const mockMembers: IMember[] = [
     email: "hsu@example.com",
     birthday: "1994-02-19",
     gender: "female",
+    bu: "BU1",
     mainStore: "板橋醫美",
     relatedStores: [],
     createdAt: "2024-10-12T16:45:00Z",
@@ -223,6 +236,7 @@ export const mockMembers: IMember[] = [
     email: "liu2@example.com",
     birthday: "1990-03-15", // 生日不同
     gender: "female",
+    bu: "BU3",
     mainStore: "愛美肌",
     relatedStores: [],
     createdAt: "2024-11-01T10:00:00Z",
@@ -238,6 +252,7 @@ export const mockMembers: IMember[] = [
     email: "chou2@example.com",
     birthday: "1991-06-14", // 生日相同
     gender: "male",
+    bu: "BU3",
     mainStore: "漾澤",
     relatedStores: [],
     createdAt: "2024-11-02T11:00:00Z",
@@ -253,6 +268,7 @@ export const mockMembers: IMember[] = [
     email: "huang2@example.com",
     birthday: "1995-07-18",
     gender: "female",
+    bu: "BU1",
     mainStore: "板橋醫美",
     relatedStores: [],
     createdAt: "2024-11-03T12:00:00Z",
@@ -268,6 +284,7 @@ export const mockMembers: IMember[] = [
     email: "test1@example.com",
     birthday: "1992-01-01",
     gender: "female",
+    bu: "BU3",
     mainStore: "愛美肌",
     relatedStores: [],
     createdAt: "2024-11-04T13:00:00Z",
@@ -281,6 +298,7 @@ export const mockMembers: IMember[] = [
     email: "test2@example.com",
     birthday: "1993-02-02", // 生日不同
     gender: "female",
+    bu: "BU1",
     mainStore: "板橋醫美",
     relatedStores: [],
     createdAt: "2024-11-05T14:00:00Z",
